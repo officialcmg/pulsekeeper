@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# Contracts
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+
+# Indexer
+indexer/generated/
+indexer/.ponder/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+
+# Misc
+coverage/
+.vercel/
+.netlify/
