@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Advanced Permissions (ERC-7715)",
-  description: "A dApp to test the Advanced Permissions (ERC-7715) implementation",
+  title: "PulseKeeper - Your crypto stays safe, even when you can't access it",
+  description: "Non-custodial crypto recovery powered by MetaMask Advanced Permissions. Set up backups, check in periodically, and if you ever go inactive, your funds automatically flow to the people you trust.",
 };
 
 export default function RootLayout({
