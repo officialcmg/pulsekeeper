@@ -1,0 +1,52 @@
+type RegisteredUser {
+  id: ID!
+  pulsePeriodSeconds: BigInt!
+  lastCheckIn: BigInt!
+  deadline: BigInt!
+  registeredAt: BigInt!
+  updatedAt: BigInt!
+  backups: [Backup!]! @derivedFrom(field: "user")
+  distributions: [Distribution!]! @derivedFrom(field: "user")
+  checkIns: [CheckInEvent!]! @derivedFrom(field: "user")
+}
+
+type Backup {
+  id: ID!
+  user: RegisteredUser! @index
+  address: String!
+  allocationBps: Int!
+  createdAt: BigInt!
+}
+
+type Distribution {
+  id: ID!
+  user: RegisteredUser! @index
+  recipient: String! @index
+  token: String! @index
+  tokenType: TokenType!
+  amount: BigInt!
+  txHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type CheckInEvent {
+  id: ID!
+  user: RegisteredUser! @index
+  timestamp: BigInt!
+  newDeadline: BigInt!
+  txHash: String!
+  blockNumber: BigInt!
+}
+
+enum TokenType {
+  NATIVE
+  ERC20
+}
+
+type GlobalStats {
+  id: ID!
+  totalUsers: Int!
+  totalDistributions: Int!
+  totalCheckIns: Int!
+}

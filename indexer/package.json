@@ -1,0 +1,21 @@
+{
+  "name": "pulsekeeper-indexer",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "deploy": "envio deploy"
+  },
+  "dependencies": {
+    "envio": "^2.32.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
