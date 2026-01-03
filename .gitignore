@@ -12,9 +12,11 @@ contracts/cache/
 contracts/artifacts/
 contracts/typechain-types/
 
-# Indexer
+# Indexer (Envio)
 indexer/generated/
+indexer/node_modules/
 indexer/.ponder/
+indexer/.envio/
 
 # Environment files
 .env

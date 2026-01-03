@@ -1,0 +1,25 @@
+# Generated files
+generated/
+!generated/.gitkeep
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+lib/
+
+# Envio
+.envio/
+persisted_state.envio.json
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
