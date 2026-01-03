@@ -5,6 +5,7 @@ import { Backup } from "@/components/BackupAddresses";
 import { TokenAllowance } from "@/components/TokenSelector";
 import { PulseSettings } from "@/components/PulseConfig";
 import { SetupConfig } from "@/components/SetupWizard";
+import { usePulseKeeperContract } from "@/hooks/usePulseKeeperContract";
 
 interface PulseKeeperState {
   isSetupComplete: boolean;
@@ -13,10 +14,12 @@ interface PulseKeeperState {
   pulseSettings: PulseSettings;
   lastCheckIn: Date | null;
   isDistributing: boolean;
+  isRegistering: boolean;
+  registerError: string | null;
 }
 
 interface PulseKeeperContextType extends PulseKeeperState {
-  completeSetup: (config: SetupConfig) => void;
+  completeSetup: (config: SetupConfig) => Promise<void>;
   checkIn: () => Promise<void>;
   resetSetup: () => void;
 }
@@ -28,38 +31,66 @@ const defaultState: PulseKeeperState = {
   pulseSettings: { pulsePeriodSeconds: 2592000, customPeriod: false }, // 30 days in seconds
   lastCheckIn: null,
   isDistributing: false,
+  isRegistering: false,
+  registerError: null,
 };
 
 const PulseKeeperContext = createContext<PulseKeeperContextType>({
   ...defaultState,
-  completeSetup: () => {},
+  completeSetup: async () => {},
   checkIn: async () => {},
   resetSetup: () => {},
 });
 
 export function PulseKeeperProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PulseKeeperState>(defaultState);
+  const { register, checkIn: contractCheckIn } = usePulseKeeperContract();
 
-  const completeSetup = useCallback((config: SetupConfig) => {
-    setState({
-      isSetupComplete: true,
-      tokenAllowances: config.tokenAllowances,
-      backups: config.backups,
-      pulseSettings: config.pulseSettings,
-      lastCheckIn: new Date(), // Initial check-in on setup
-      isDistributing: false,
-    });
-  }, []);
+  const completeSetup = useCallback(async (config: SetupConfig) => {
+    // Set registering state
+    setState((prev) => ({
+      ...prev,
+      isRegistering: true,
+      registerError: null,
+    }));
+
+    try {
+      // Call the contract to register the user with backups and pulse period
+      console.log("🔄 Registering on PulseKeeper contract...");
+      const txHash = await register(config.pulseSettings.pulsePeriodSeconds, config.backups);
+      console.log("✅ Registered on contract, tx:", txHash);
+
+      setState({
+        isSetupComplete: true,
+        tokenAllowances: config.tokenAllowances,
+        backups: config.backups,
+        pulseSettings: config.pulseSettings,
+        lastCheckIn: new Date(),
+        isDistributing: false,
+        isRegistering: false,
+        registerError: null,
+      });
+    } catch (error) {
+      console.error("❌ Failed to register on contract:", error);
+      setState((prev) => ({
+        ...prev,
+        isRegistering: false,
+        registerError: error instanceof Error ? error.message : "Failed to register",
+      }));
+      throw error; // Re-throw so SetupWizard can handle it
+    }
+  }, [register]);
 
   const checkIn = useCallback(async () => {
-    // TODO: This will call the PulseKeeper contract's checkIn function
-    // For now, we just update the local state
+    // Call the contract's checkIn function
+    const txHash = await contractCheckIn();
+    console.log("✅ Check-in confirmed, tx:", txHash);
     setState((prev) => ({
       ...prev,
       lastCheckIn: new Date(),
       isDistributing: false,
     }));
-  }, []);
+  }, [contractCheckIn]);
 
   const resetSetup = useCallback(() => {
     setState(defaultState);
