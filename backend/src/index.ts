@@ -1,11 +1,12 @@
+import dotenv from 'dotenv';
+
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { permissionsRouter } from './api/permissions.js';
 import { distributionRouter } from './api/distribution.js';
 import { initDatabase } from './db/index.js';
-
-dotenv.config();
+import { SESSION_ACCOUNT_ADDRESS } from './config/clients.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,7 +21,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     service: 'PulseKeeper Backend',
-    sessionAccount: process.env.SESSION_ACCOUNT_ADDRESS || 'not configured'
+    sessionAccount: SESSION_ACCOUNT_ADDRESS || 'not configured'
   });
 });
 
