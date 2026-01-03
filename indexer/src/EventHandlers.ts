@@ -1,235 +1,88 @@
+/*
+ * Please refer to https://docs.envio.dev for a thorough guide on all Envio indexer features
+ */
 import {
   PulseKeeperRegistry,
-  ERC20TransferAmountEnforcer,
-  NativeTokenTransferAmountEnforcer,
-} from "../generated";
-import type {
-  RegisteredUser,
-  Backup,
-  Distribution,
-  CheckInEvent,
-  GlobalStats,
-} from "../generated";
+  PulseKeeperRegistry_UserRegistered,
+  PulseKeeperRegistry_CheckIn,
+  PulseKeeperRegistry_BackupsUpdated,
+  PulseKeeperRegistry_PulsePeriodUpdated,
+  ERC20PeriodTransferEnforcer,
+  ERC20PeriodTransferEnforcer_TransferredInPeriod,
+  NativeTokenPeriodTransferEnforcer,
+  NativeTokenPeriodTransferEnforcer_TransferredInPeriod,
+} from "generated";
 
-const GLOBAL_STATS_ID = "global";
-
-// Helper to get or create global stats
-async function getOrCreateGlobalStats(context: any): Promise<GlobalStats> {
-  let stats = await context.GlobalStats.get(GLOBAL_STATS_ID);
-  if (!stats) {
-    stats = {
-      id: GLOBAL_STATS_ID,
-      totalUsers: 0,
-      totalDistributions: 0,
-      totalCheckIns: 0,
-    };
-    context.GlobalStats.set(stats);
-  }
-  return stats;
-}
-
-// ============================================
-// PulseKeeperRegistry Event Handlers
-// ============================================
-
+// PulseKeeperRegistry Handlers
 PulseKeeperRegistry.UserRegistered.handler(async ({ event, context }) => {
-  const userId = event.params.user.toLowerCase();
-  const timestamp = BigInt(event.block.timestamp);
-
-  // Create the registered user
-  const user: RegisteredUser = {
-    id: userId,
+  const entity: PulseKeeperRegistry_UserRegistered = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    user: event.params.user,
     pulsePeriodSeconds: event.params.pulsePeriodSeconds,
-    lastCheckIn: event.params.timestamp,
+    timestamp: event.params.timestamp,
     deadline: event.params.deadline,
-    registeredAt: timestamp,
-    updatedAt: timestamp,
   };
-  context.RegisteredUser.set(user);
-
-  // Update global stats
-  const stats = await getOrCreateGlobalStats(context);
-  context.GlobalStats.set({
-    ...stats,
-    totalUsers: stats.totalUsers + 1,
-  });
-
-  context.log.info(`User registered: ${userId}`);
+  context.PulseKeeperRegistry_UserRegistered.set(entity);
 });
 
 PulseKeeperRegistry.CheckIn.handler(async ({ event, context }) => {
-  const userId = event.params.user.toLowerCase();
-  const timestamp = BigInt(event.block.timestamp);
-
-  // Get existing user
-  const user = await context.RegisteredUser.get(userId);
-  if (!user) {
-    context.log.warn(`CheckIn for unregistered user: ${userId}`);
-    return;
-  }
-
-  // Update user
-  context.RegisteredUser.set({
-    ...user,
-    lastCheckIn: event.params.timestamp,
-    deadline: event.params.deadline,
-    updatedAt: timestamp,
-  });
-
-  // Create check-in event record
-  const txHash = (event.transaction as any).hash || event.block.hash;
-  const checkInId = `${event.block.number}-${event.logIndex}`;
-  const checkInEvent: CheckInEvent = {
-    id: checkInId,
-    user_id: userId,
+  const entity: PulseKeeperRegistry_CheckIn = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    user: event.params.user,
     timestamp: event.params.timestamp,
-    newDeadline: event.params.deadline,
-    txHash: txHash,
-    blockNumber: BigInt(event.block.number),
+    deadline: event.params.deadline,
   };
-  context.CheckInEvent.set(checkInEvent);
-
-  // Update global stats
-  const stats = await getOrCreateGlobalStats(context);
-  context.GlobalStats.set({
-    ...stats,
-    totalCheckIns: stats.totalCheckIns + 1,
-  });
+  context.PulseKeeperRegistry_CheckIn.set(entity);
 });
 
 PulseKeeperRegistry.BackupsUpdated.handler(async ({ event, context }) => {
-  const userId = event.params.user.toLowerCase();
-  const timestamp = BigInt(event.block.timestamp);
-
-  // Get existing user
-  const user = await context.RegisteredUser.get(userId);
-  if (!user) {
-    context.log.warn(`BackupsUpdated for unregistered user: ${userId}`);
-    return;
-  }
-
-  // Update user timestamp
-  context.RegisteredUser.set({
-    ...user,
-    updatedAt: timestamp,
-  });
-
-  // Delete old backups and create new ones
-  // Note: We use a composite ID to track backups
-  // Backup tuple is [address, allocationBps]
-  for (const backup of event.params.backups) {
-    const backupAddr = (backup as any)[0] || backup;
-    const backupBps = (backup as any)[1] || 0;
-    const backupId = `${userId}-${String(backupAddr).toLowerCase()}`;
-    const backupEntity: Backup = {
-      id: backupId,
-      user_id: userId,
-      address: String(backupAddr).toLowerCase(),
-      allocationBps: Number(backupBps),
-      createdAt: timestamp,
-    };
-    context.Backup.set(backupEntity);
-  }
+  const entity: PulseKeeperRegistry_BackupsUpdated = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    user: event.params.user,
+  };
+  context.PulseKeeperRegistry_BackupsUpdated.set(entity);
 });
 
 PulseKeeperRegistry.PulsePeriodUpdated.handler(async ({ event, context }) => {
-  const userId = event.params.user.toLowerCase();
-  const timestamp = BigInt(event.block.timestamp);
-
-  // Get existing user
-  const user = await context.RegisteredUser.get(userId);
-  if (!user) {
-    context.log.warn(`PulsePeriodUpdated for unregistered user: ${userId}`);
-    return;
-  }
-
-  // Update user
-  context.RegisteredUser.set({
-    ...user,
+  const entity: PulseKeeperRegistry_PulsePeriodUpdated = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    user: event.params.user,
     pulsePeriodSeconds: event.params.pulsePeriodSeconds,
-    deadline: event.params.newDeadline,
-    updatedAt: timestamp,
-  });
+    newDeadline: event.params.newDeadline,
+  };
+  context.PulseKeeperRegistry_PulsePeriodUpdated.set(entity);
 });
 
-// ============================================
-// ERC20 Enforcer Event Handler
-// ============================================
-
-ERC20TransferAmountEnforcer.TransferredInPeriod.handler(async ({ event, context }) => {
-  // The delegator is the user who granted the permission
-  const delegatorAddress = event.params.delegator.toLowerCase();
-  
-  // Check if the delegator is a registered PulseKeeper user
-  const user = await context.RegisteredUser.get(delegatorAddress);
-  if (!user) {
-    // Not a registered PulseKeeper user, skip
-    return;
-  }
-
-  const txHash = (event.transaction as any).hash || event.block.hash;
-  const distributionId = `${event.block.number}-${event.logIndex}`;
-
-  const distribution: Distribution = {
-    id: distributionId,
-    user_id: delegatorAddress,
-    recipient: "backup", // The actual recipient is determined by our backend logic
-    token: event.params.token.toLowerCase(),
-    tokenType: "ERC20",
-    amount: event.params.amount,
-    txHash: txHash,
-    blockNumber: BigInt(event.block.number),
-    timestamp: event.params.timestamp,
+// ERC20 Enforcer Handler
+ERC20PeriodTransferEnforcer.TransferredInPeriod.handler(async ({ event, context }) => {
+  const entity: ERC20PeriodTransferEnforcer_TransferredInPeriod = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    sender: event.params.sender,
+    redeemer: event.params.redeemer,
+    delegationHash: event.params.delegationHash,
+    token: event.params.token,
+    periodAmount: event.params.periodAmount,
+    periodDuration: event.params.periodDuration,
+    startDate: event.params.startDate,
+    transferredInCurrentPeriod: event.params.transferredInCurrentPeriod,
+    transferTimestamp: event.params.transferTimestamp,
   };
-  context.Distribution.set(distribution);
 
-  // Update global stats
-  const stats = await getOrCreateGlobalStats(context);
-  context.GlobalStats.set({
-    ...stats,
-    totalDistributions: stats.totalDistributions + 1,
-  });
-
-  context.log.info(`ERC20 Distribution: ${event.params.amount} of ${event.params.token} from ${delegatorAddress}`);
+  context.ERC20PeriodTransferEnforcer_TransferredInPeriod.set(entity);
 });
 
-// ============================================
-// Native Token Enforcer Event Handler
-// ============================================
-
-NativeTokenTransferAmountEnforcer.NativeTransferredInPeriod.handler(async ({ event, context }) => {
-  // The delegator is the user who granted the permission
-  const delegatorAddress = event.params.delegator.toLowerCase();
-  
-  // Check if the delegator is a registered PulseKeeper user
-  const user = await context.RegisteredUser.get(delegatorAddress);
-  if (!user) {
-    // Not a registered PulseKeeper user, skip
-    return;
-  }
-
-  const txHash = (event.transaction as any).hash || event.block.hash;
-  const distributionId = `${event.block.number}-${event.logIndex}`;
-
-  const distribution: Distribution = {
-    id: distributionId,
-    user_id: delegatorAddress,
-    recipient: "backup", // The actual recipient is determined by our backend logic
-    token: "0x0000000000000000000000000000000000000000", // Native ETH
-    tokenType: "NATIVE",
-    amount: event.params.amount,
-    txHash: txHash,
-    blockNumber: BigInt(event.block.number),
-    timestamp: event.params.timestamp,
+NativeTokenPeriodTransferEnforcer.TransferredInPeriod.handler(async ({ event, context }) => {
+  const entity: NativeTokenPeriodTransferEnforcer_TransferredInPeriod = {
+    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    sender: event.params.sender,
+    redeemer: event.params.redeemer,
+    delegationHash: event.params.delegationHash,
+    periodAmount: event.params.periodAmount,
+    periodDuration: event.params.periodDuration,
+    startDate: event.params.startDate,
+    transferredInCurrentPeriod: event.params.transferredInCurrentPeriod,
+    transferTimestamp: event.params.transferTimestamp,
   };
-  context.Distribution.set(distribution);
 
-  // Update global stats
-  const stats = await getOrCreateGlobalStats(context);
-  context.GlobalStats.set({
-    ...stats,
-    totalDistributions: stats.totalDistributions + 1,
-  });
-
-  context.log.info(`Native Distribution: ${event.params.amount} ETH from ${delegatorAddress}`);
+  context.NativeTokenPeriodTransferEnforcer_TransferredInPeriod.set(entity);
 });

@@ -1,25 +1,36 @@
-# Generated files
-generated/
-!generated/.gitkeep
-
-# Dependencies
-node_modules/
-
-# Build
-dist/
-lib/
-
-# Envio
-.envio/
-persisted_state.envio.json
-
-# Environment
+*.exe
+*.obj
+*.out
+*.compile
+*.native
+*.byte
+*.cmo
+*.annot
+*.cmi
+*.cmx
+*.cmt
+*.cmti
+*.cma
+*.a
+*.cmxa
+*.obj
+*~
+*.annot
+*.cmj
+*.bak
+lib/*
+*.mlast
+*.mliast
+.vscode
+.merlin
+.bsb.lock
+/node_modules/
+benchmarks/
+artifacts
+generated
+logs
+*.res.js
+*.res.mjs
+*.gen.ts
+build
 .env
-.env.local
-
-# Logs
-*.log
-
-# IDE
-.idea/
-.vscode/

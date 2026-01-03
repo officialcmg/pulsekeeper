@@ -1,68 +1,23 @@
-# PulseKeeper Indexer
+## Envio Indexer
 
-Envio HyperIndex indexer for tracking PulseKeeper distributions and user activity.
+*Please refer to the [documentation website](https://docs.envio.dev) for a thorough guide on all [Envio](https://envio.dev) indexer features*
 
-## Entities
-
-- **RegisteredUser** - Users registered with PulseKeeper
-- **Backup** - Backup addresses for each user
-- **Distribution** - Token distributions (ERC20 and Native ETH)
-- **CheckInEvent** - User check-in history
-- **GlobalStats** - Aggregate statistics
-
-## Contracts Indexed
-
-| Contract | Address (Sepolia) |
-|----------|-------------------|
-| PulseKeeperRegistry | `0x82C1A7C28FA5b364893D6c124D93CBb2E02910e9` |
-| ERC20TransferAmountEnforcer | `0x474e3ae7e169e940607cc624da8a15eb120139ab` |
-| NativeTokenTransferAmountEnforcer | `0x9bc0faf4aca5ae429f4c06aeeac517520cb16bd9` |
-
-## Development
+### Run
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Generate types
-pnpm envio codegen
-
-# Run locally (requires Docker)
-pnpm envio dev
+pnpm dev
 ```
 
-## Deployment
+Visit http://localhost:8080 to see the GraphQL Playground, local password is `testing`.
 
-Deploy to [Envio Hosted Service](https://envio.dev):
+### Generate files from `config.yaml` or `schema.graphql`
 
-1. Go to https://envio.dev
-2. Sign in with GitHub
-3. Create new indexer from this repo
-4. Select the `indexer/` directory
-5. Deploy
-
-## GraphQL Queries
-
-Once deployed, query the indexer:
-
-```graphql
-# Get all registered users
-query {
-  RegisteredUser {
-    id
-    pulsePeriodSeconds
-    deadline
-    lastCheckIn
-  }
-}
-
-# Get distributions for a user
-query {
-  Distribution(where: { user_id: { _eq: "0x..." } }) {
-    token
-    tokenType
-    amount
-    timestamp
-  }
-}
+```bash
+pnpm codegen
 ```
+
+### Pre-requisites
+
+- [Node.js (use v18 or newer)](https://nodejs.org/en/download/current)
+- [pnpm (use v8 or newer)](https://pnpm.io/installation)
+- [Docker desktop](https://www.docker.com/products/docker-desktop/)

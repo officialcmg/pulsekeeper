@@ -1,52 +1,52 @@
-type RegisteredUser {
+type PulseKeeperRegistry_UserRegistered {
   id: ID!
+  user: String!
   pulsePeriodSeconds: BigInt!
-  lastCheckIn: BigInt!
+  timestamp: BigInt!
   deadline: BigInt!
-  registeredAt: BigInt!
-  updatedAt: BigInt!
-  backups: [Backup!]! @derivedFrom(field: "user")
-  distributions: [Distribution!]! @derivedFrom(field: "user")
-  checkIns: [CheckInEvent!]! @derivedFrom(field: "user")
 }
 
-type Backup {
+type PulseKeeperRegistry_CheckIn {
   id: ID!
-  user: RegisteredUser! @index
-  address: String!
-  allocationBps: Int!
-  createdAt: BigInt!
-}
-
-type Distribution {
-  id: ID!
-  user: RegisteredUser! @index
-  recipient: String! @index
-  token: String! @index
-  tokenType: TokenType!
-  amount: BigInt!
-  txHash: String!
-  blockNumber: BigInt!
+  user: String!
   timestamp: BigInt!
+  deadline: BigInt!
 }
 
-type CheckInEvent {
+type PulseKeeperRegistry_BackupsUpdated {
   id: ID!
-  user: RegisteredUser! @index
-  timestamp: BigInt!
+  user: String!
+}
+
+type PulseKeeperRegistry_PulsePeriodUpdated {
+  id: ID!
+  user: String!
+  pulsePeriodSeconds: BigInt!
   newDeadline: BigInt!
-  txHash: String!
-  blockNumber: BigInt!
 }
 
-enum TokenType {
-  NATIVE
-  ERC20
-}
-
-type GlobalStats {
+type ERC20PeriodTransferEnforcer_TransferredInPeriod {
   id: ID!
-  totalUsers: Int!
-  totalDistributions: Int!
-  totalCheckIns: Int!
+  sender: String!
+  redeemer: String!
+  delegationHash: String!
+  token: String!
+  periodAmount: BigInt!
+  periodDuration: BigInt!
+  startDate: BigInt!
+  transferredInCurrentPeriod: BigInt!
+  transferTimestamp: BigInt!
 }
+
+type NativeTokenPeriodTransferEnforcer_TransferredInPeriod {
+  id: ID!
+  sender: String!
+  redeemer: String!
+  delegationHash: String!
+  periodAmount: BigInt!
+  periodDuration: BigInt!
+  startDate: BigInt!
+  transferredInCurrentPeriod: BigInt!
+  transferTimestamp: BigInt!
+}
+
