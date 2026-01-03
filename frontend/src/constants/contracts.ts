@@ -1,14 +1,14 @@
 import { Address } from "viem";
 
-// PulseKeeper Registry contract address (deployed on Sepolia)
-export const PULSEKEEPER_REGISTRY_ADDRESS: Address = "0xF43DA82C0084CfbFd882b17c69770f0BB6b56F51";
+// PulseKeeper Registry contract address (deployed on Sepolia )
+export const PULSEKEEPER_REGISTRY_ADDRESS: Address = "0x583A4b5b7154d4C8Bf1ACD62CB1e9C8Aa3f99Cd5";
 
 // PulseKeeper Registry ABI - matches contracts/src/PulseKeeperRegistry.sol
 export const PULSEKEEPER_REGISTRY_ABI = [
   // Register function
   {
     inputs: [
-      { name: "pulsePeriodDays", type: "uint256" },
+      { name: "pulsePeriodSeconds", type: "uint256" },
       {
         components: [
           { name: "addr", type: "address" },
@@ -50,7 +50,7 @@ export const PULSEKEEPER_REGISTRY_ABI = [
   },
   // Set pulse period
   {
-    inputs: [{ name: "pulsePeriodDays", type: "uint256" }],
+    inputs: [{ name: "pulsePeriodSeconds", type: "uint256" }],
     name: "setPulsePeriod",
     outputs: [],
     stateMutability: "nonpayable",
@@ -122,7 +122,7 @@ export const PULSEKEEPER_REGISTRY_ABI = [
       { name: "registered", type: "bool" },
       { name: "lastCheckIn", type: "uint256" },
       { name: "deadline", type: "uint256" },
-      { name: "pulsePeriodDays", type: "uint256" },
+      { name: "pulsePeriodSeconds", type: "uint256" },
       {
         components: [
           { name: "addr", type: "address" },
@@ -140,7 +140,7 @@ export const PULSEKEEPER_REGISTRY_ABI = [
     anonymous: false,
     inputs: [
       { indexed: true, name: "user", type: "address" },
-      { indexed: false, name: "pulsePeriodDays", type: "uint256" },
+      { indexed: false, name: "pulsePeriodSeconds", type: "uint256" },
       { indexed: false, name: "timestamp", type: "uint256" },
       { indexed: false, name: "deadline", type: "uint256" },
     ],
@@ -178,7 +178,7 @@ export const PULSEKEEPER_REGISTRY_ABI = [
     anonymous: false,
     inputs: [
       { indexed: true, name: "user", type: "address" },
-      { indexed: false, name: "pulsePeriodDays", type: "uint256" },
+      { indexed: false, name: "pulsePeriodSeconds", type: "uint256" },
       { indexed: false, name: "newDeadline", type: "uint256" },
     ],
     name: "PulsePeriodUpdated",

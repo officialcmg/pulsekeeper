@@ -44,7 +44,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [tokenAllowances, setTokenAllowances] = useState<TokenAllowance[]>([]);
   const [backups, setBackups] = useState<Backup[]>([]);
   const [pulseSettings, setPulseSettings] = useState<PulseSettings>({
-    pulsePeriodDays: 30,
+    pulsePeriodSeconds: 2592000, // 30 days in seconds
     customPeriod: false,
   });
   const [isGranting, setIsGranting] = useState(false);
@@ -66,7 +66,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         const totalAllocation = backups.reduce((sum, b) => sum + b.allocationBps, 0);
         return backups.length > 0 && totalAllocation === 10000;
       case 3:
-        return pulseSettings.pulsePeriodDays >= 1;
+        return pulseSettings.pulsePeriodSeconds >= 1;
       case 4:
         return true;
       default:
@@ -261,7 +261,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   Pulse Period
                 </p>
                 <p className="text-gray-900 dark:text-white">
-                  {pulseSettings.pulsePeriodDays} days
+                  {pulseSettings.pulsePeriodSeconds < 60 
+                    ? `${pulseSettings.pulsePeriodSeconds} seconds`
+                    : pulseSettings.pulsePeriodSeconds < 3600
+                    ? `${Math.floor(pulseSettings.pulsePeriodSeconds / 60)} minutes`
+                    : pulseSettings.pulsePeriodSeconds < 86400
+                    ? `${Math.floor(pulseSettings.pulsePeriodSeconds / 3600)} hours`
+                    : `${Math.floor(pulseSettings.pulsePeriodSeconds / 86400)} days`}
                 </p>
               </div>
             </div>

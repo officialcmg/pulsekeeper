@@ -16,7 +16,7 @@ contract PulseKeeperRegistry {
         bool isRegistered;
         uint256 lastCheckIn;
         uint256 deadline;
-        uint256 pulsePeriodDays;
+        uint256 pulsePeriodSeconds; // Changed from days to seconds for flexibility
         Backup[] backups;
     }
 
@@ -25,7 +25,7 @@ contract PulseKeeperRegistry {
     // Events with all data needed for indexer
     event UserRegistered(
         address indexed user,
-        uint256 pulsePeriodDays,
+        uint256 pulsePeriodSeconds,
         uint256 timestamp,
         uint256 deadline
     );
@@ -37,7 +37,7 @@ contract PulseKeeperRegistry {
     );
     
     event BackupsUpdated(address indexed user, Backup[] backups);
-    event PulsePeriodUpdated(address indexed user, uint256 pulsePeriodDays, uint256 newDeadline);
+    event PulsePeriodUpdated(address indexed user, uint256 pulsePeriodSeconds, uint256 newDeadline);
 
     error InvalidAllocation();
     error NoBackupsSet();
@@ -46,23 +46,23 @@ contract PulseKeeperRegistry {
 
     /**
      * @notice Register a new user with initial configuration
-     * @param pulsePeriodDays The number of days between required check-ins
+     * @param pulsePeriodSeconds The number of seconds between required check-ins
      * @param backups Array of backup addresses with their allocation percentages
      */
-    function register(uint256 pulsePeriodDays, Backup[] calldata backups) external {
-        if (pulsePeriodDays == 0) revert InvalidPulsePeriod();
+    function register(uint256 pulsePeriodSeconds, Backup[] calldata backups) external {
+        if (pulsePeriodSeconds == 0) revert InvalidPulsePeriod();
         if (backups.length == 0) revert NoBackupsSet();
         
         _validateBackups(backups);
         
         UserConfig storage config = userConfigs[msg.sender];
         uint256 currentTime = block.timestamp;
-        uint256 newDeadline = currentTime + (pulsePeriodDays * 1 days);
+        uint256 newDeadline = currentTime + pulsePeriodSeconds;
         
         config.isRegistered = true;
         config.lastCheckIn = currentTime;
         config.deadline = newDeadline;
-        config.pulsePeriodDays = pulsePeriodDays;
+        config.pulsePeriodSeconds = pulsePeriodSeconds;
         
         // Clear existing backups and add new ones
         delete config.backups;
@@ -70,7 +70,7 @@ contract PulseKeeperRegistry {
             config.backups.push(backups[i]);
         }
 
-        emit UserRegistered(msg.sender, pulsePeriodDays, currentTime, newDeadline);
+        emit UserRegistered(msg.sender, pulsePeriodSeconds, currentTime, newDeadline);
         emit BackupsUpdated(msg.sender, backups);
     }
 
@@ -82,7 +82,7 @@ contract PulseKeeperRegistry {
         if (!config.isRegistered) revert NotRegistered();
         
         uint256 currentTime = block.timestamp;
-        uint256 newDeadline = currentTime + (config.pulsePeriodDays * 1 days);
+        uint256 newDeadline = currentTime + config.pulsePeriodSeconds;
         
         config.lastCheckIn = currentTime;
         config.deadline = newDeadline;
@@ -111,19 +111,19 @@ contract PulseKeeperRegistry {
 
     /**
      * @notice Update the pulse period
-     * @param pulsePeriodDays The number of days between required check-ins
+     * @param pulsePeriodSeconds The number of seconds between required check-ins
      */
-    function setPulsePeriod(uint256 pulsePeriodDays) external {
+    function setPulsePeriod(uint256 pulsePeriodSeconds) external {
         UserConfig storage config = userConfigs[msg.sender];
         if (!config.isRegistered) revert NotRegistered();
-        if (pulsePeriodDays == 0) revert InvalidPulsePeriod();
+        if (pulsePeriodSeconds == 0) revert InvalidPulsePeriod();
         
-        config.pulsePeriodDays = pulsePeriodDays;
+        config.pulsePeriodSeconds = pulsePeriodSeconds;
         // Recalculate deadline from last check-in with new period
-        uint256 newDeadline = config.lastCheckIn + (pulsePeriodDays * 1 days);
+        uint256 newDeadline = config.lastCheckIn + pulsePeriodSeconds;
         config.deadline = newDeadline;
         
-        emit PulsePeriodUpdated(msg.sender, pulsePeriodDays, newDeadline);
+        emit PulsePeriodUpdated(msg.sender, pulsePeriodSeconds, newDeadline);
     }
 
     /**
@@ -138,10 +138,10 @@ contract PulseKeeperRegistry {
     /**
      * @notice Get the pulse period for a user
      * @param user The user address
-     * @return The pulse period in days
+     * @return The pulse period in seconds
      */
     function getPulsePeriod(address user) external view returns (uint256) {
-        return userConfigs[user].pulsePeriodDays;
+        return userConfigs[user].pulsePeriodSeconds;
     }
 
     /**
@@ -200,18 +200,18 @@ contract PulseKeeperRegistry {
      * @return registered Whether the user is registered
      * @return lastCheckIn The last check-in timestamp
      * @return deadline The deadline timestamp
-     * @return pulsePeriodDays The pulse period in days
+     * @return pulsePeriodSeconds The pulse period in seconds
      * @return backups Array of backup addresses with allocations
      */
     function getUserConfig(address user) external view returns (
         bool registered,
         uint256 lastCheckIn,
         uint256 deadline,
-        uint256 pulsePeriodDays,
+        uint256 pulsePeriodSeconds,
         Backup[] memory backups
     ) {
         UserConfig storage config = userConfigs[user];
-        return (config.isRegistered, config.lastCheckIn, config.deadline, config.pulsePeriodDays, config.backups);
+        return (config.isRegistered, config.lastCheckIn, config.deadline, config.pulsePeriodSeconds, config.backups);
     }
 
     /**
