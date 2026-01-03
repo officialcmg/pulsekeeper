@@ -22,6 +22,7 @@ interface DashboardProps {
   lastCheckIn: Date | null;
   isDistributing: boolean;
   onCheckIn: () => Promise<void>;
+  onTimerExpired?: () => Promise<void>;
 }
 
 type Status = "protected" | "warning" | "distributing";
@@ -33,9 +34,11 @@ export default function Dashboard({
   lastCheckIn,
   isDistributing,
   onCheckIn,
+  onTimerExpired,
 }: DashboardProps) {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [timerExpiredTriggered, setTimerExpiredTriggered] = useState(false);
 
   // Update current time every second for accurate countdown
   useEffect(() => {
@@ -49,6 +52,22 @@ export default function Dashboard({
     : null;
 
   const timeRemaining = deadline ? deadline.getTime() - now.getTime() : 0;
+
+  // Trigger distribution 2 seconds after timer expires
+  useEffect(() => {
+    if (timeRemaining <= 0 && !timerExpiredTriggered && onTimerExpired && lastCheckIn) {
+      setTimerExpiredTriggered(true);
+      const timeout = setTimeout(() => {
+        console.log("⏰ Timer expired + 2s delay - triggering distribution...");
+        onTimerExpired();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+    // Reset when timer is reset (after check-in)
+    if (timeRemaining > 0 && timerExpiredTriggered) {
+      setTimerExpiredTriggered(false);
+    }
+  }, [timeRemaining, timerExpiredTriggered, onTimerExpired, lastCheckIn]);
   const daysRemaining = Math.max(0, Math.floor(timeRemaining / (24 * 60 * 60 * 1000)));
   const hoursRemaining = Math.max(
     0,

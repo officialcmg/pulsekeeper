@@ -8,6 +8,7 @@ import { metaMask } from "wagmi/connectors";
 import { PermissionProvider } from "@/providers/PermissionProvider";
 import { SessionAccountProvider } from "@/providers/SessionAccountProvider";
 import { PulseKeeperProvider } from "@/providers/PulseKeeperProvider";
+import { ApolloProvider } from "@/providers/ApolloProvider";
 
 export const connectors = [metaMask()];
 
@@ -27,13 +28,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
         <QueryClientProvider client={queryClient}>
             <WagmiProvider config={wagmiConfig}>
-                <SessionAccountProvider>
-                    <PermissionProvider>
-                        <PulseKeeperProvider>
-                            {children}
-                        </PulseKeeperProvider>
-                    </PermissionProvider>
-                </SessionAccountProvider>
+                <ApolloProvider>
+                    <SessionAccountProvider>
+                        <PermissionProvider>
+                            <PulseKeeperProvider>
+                                {children}
+                            </PulseKeeperProvider>
+                        </PermissionProvider>
+                    </SessionAccountProvider>
+                </ApolloProvider>
             </WagmiProvider>
         </QueryClientProvider>
     );

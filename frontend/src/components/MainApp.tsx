@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { usePermissions } from "@/providers/PermissionProvider";
 import { usePulseKeeper } from "@/providers/PulseKeeperProvider";
+import { useDistributionSubscription } from "@/hooks/useDistributionSubscription";
 import ConnectButton from "./ConnectButton";
 import SetupWizard from "./SetupWizard";
 import Dashboard from "./Dashboard";
 import PulseKeeperHero from "./PulseKeeperHero";
 import Header from "./Header";
 import Footer from "./Footer";
+import { DistributionPopup } from "./DistributionPopup";
 import { Loader2 } from "lucide-react";
 
 type AppStep = "connect" | "setup" | "dashboard";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+
 export default function MainApp() {
-  const { isConnected, isConnecting } = useAccount();
+  const { isConnected, isConnecting, address } = useAccount();
   const { permission } = usePermissions();
   const {
     isSetupComplete,
@@ -29,6 +33,38 @@ export default function MainApp() {
   } = usePulseKeeper();
 
   const [currentStep, setCurrentStep] = useState<AppStep>("connect");
+  const distributionTriggeredRef = useRef(false);
+  
+  // Subscribe to distributions
+  const { latestDistribution, clearDistribution } = useDistributionSubscription(address);
+
+  // Trigger distribution when timer expires
+  const triggerDistribution = useCallback(async () => {
+    if (distributionTriggeredRef.current || !address) return;
+    distributionTriggeredRef.current = true;
+    
+    try {
+      console.log("⏰ Timer expired! Triggering distribution...");
+      const response = await fetch(`${BACKEND_URL}/api/distribute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userAddress: address }),
+      });
+      
+      if (!response.ok) {
+        console.error("Distribution failed:", await response.text());
+      } else {
+        console.log("✅ Distribution triggered successfully");
+      }
+    } catch (error) {
+      console.error("Error triggering distribution:", error);
+    }
+    
+    // Reset after 10 seconds to allow future distributions
+    setTimeout(() => {
+      distributionTriggeredRef.current = false;
+    }, 10000);
+  }, [address]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -82,6 +118,7 @@ export default function MainApp() {
             lastCheckIn={lastCheckIn}
             isDistributing={isDistributing}
             onCheckIn={checkIn}
+            onTimerExpired={triggerDistribution}
           />
         );
 
@@ -98,6 +135,12 @@ export default function MainApp() {
         {renderContent()}
       </main>
       <Footer />
+      
+      {/* Distribution popup - shows when a distribution is detected */}
+      <DistributionPopup 
+        distribution={latestDistribution} 
+        onClose={clearDistribution} 
+      />
     </div>
   );
 }
