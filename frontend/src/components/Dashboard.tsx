@@ -14,12 +14,11 @@ import Image from "next/image";
 import { Backup } from "./BackupAddresses";
 import { TokenAllowance } from "./TokenSelector";
 import Button from "./Button";
-import RedeemTest from "./RedeemTest";
 
 interface DashboardProps {
   backups: Backup[];
   tokenAllowances: TokenAllowance[];
-  pulsePeriodDays: number;
+  pulsePeriodSeconds: number;
   lastCheckIn: Date | null;
   isDistributing: boolean;
   onCheckIn: () => Promise<void>;
@@ -30,7 +29,7 @@ type Status = "protected" | "warning" | "distributing";
 export default function Dashboard({
   backups,
   tokenAllowances,
-  pulsePeriodDays,
+  pulsePeriodSeconds,
   lastCheckIn,
   isDistributing,
   onCheckIn,
@@ -46,7 +45,7 @@ export default function Dashboard({
 
   // Calculate time remaining
   const deadline = lastCheckIn
-    ? new Date(lastCheckIn.getTime() + pulsePeriodDays * 24 * 60 * 60 * 1000)
+    ? new Date(lastCheckIn.getTime() + pulsePeriodSeconds * 1000)
     : null;
 
   const timeRemaining = deadline ? deadline.getTime() - now.getTime() : 0;
@@ -65,17 +64,17 @@ export default function Dashboard({
   );
 
   // Calculate progress percentage (inverted - 100% means just checked in)
-  const totalPeriodMs = pulsePeriodDays * 24 * 60 * 60 * 1000;
+  const totalPeriodMs = pulsePeriodSeconds * 1000;
   const elapsedMs = lastCheckIn ? now.getTime() - lastCheckIn.getTime() : 0;
   const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalPeriodMs) * 100));
   const safePercent = 100 - progressPercent;
 
-  // Determine status
+  // Determine status - use percentage for warning threshold (works for any period length)
   const status: Status = isDistributing
     ? "distributing"
     : timeRemaining <= 0
     ? "distributing"
-    : daysRemaining <= 2
+    : safePercent <= 20 // Less than 20% time remaining = warning
     ? "warning"
     : "protected";
 
@@ -350,8 +349,6 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Temporary Test Component - Remove before production */}
-      <RedeemTest backups={backups} tokenAllowances={tokenAllowances} />
     </div>
   );
 }

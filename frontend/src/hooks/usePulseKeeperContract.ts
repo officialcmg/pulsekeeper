@@ -23,7 +23,7 @@ export function usePulseKeeperContract() {
 
   // Register user with initial configuration
   const register = useCallback(
-    async (pulsePeriodDays: number, backups: Backup[]) => {
+    async (pulsePeriodSeconds: number, backups: Backup[]) => {
       if (!walletClient || !address) {
         throw new Error("Wallet not connected");
       }
@@ -34,7 +34,7 @@ export function usePulseKeeperContract() {
         address: PULSEKEEPER_REGISTRY_ADDRESS,
         abi: PULSEKEEPER_REGISTRY_ABI,
         functionName: "register",
-        args: [BigInt(pulsePeriodDays), backupStructs],
+        args: [BigInt(pulsePeriodSeconds), backupStructs],
       });
 
       return hash;
@@ -81,7 +81,7 @@ export function usePulseKeeperContract() {
 
   // Set pulse period
   const setPulsePeriod = useCallback(
-    async (pulsePeriodDays: number) => {
+    async (pulsePeriodSeconds: number) => {
       if (!walletClient || !address) {
         throw new Error("Wallet not connected");
       }
@@ -90,7 +90,7 @@ export function usePulseKeeperContract() {
         address: PULSEKEEPER_REGISTRY_ADDRESS,
         abi: PULSEKEEPER_REGISTRY_ABI,
         functionName: "setPulsePeriod",
-        args: [BigInt(pulsePeriodDays)],
+        args: [BigInt(pulsePeriodSeconds)],
       });
 
       return hash;

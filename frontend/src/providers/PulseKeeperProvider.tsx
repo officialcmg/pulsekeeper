@@ -25,7 +25,7 @@ const defaultState: PulseKeeperState = {
   isSetupComplete: false,
   tokenAllowances: [],
   backups: [],
-  pulseSettings: { pulsePeriodDays: 30, customPeriod: false },
+  pulseSettings: { pulsePeriodSeconds: 2592000, customPeriod: false }, // 30 days in seconds
   lastCheckIn: null,
   isDistributing: false,
 };

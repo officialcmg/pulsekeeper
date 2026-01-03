@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { useSessionAccount } from "@/providers/SessionAccountProvider";
 import { usePermissions } from "@/providers/PermissionProvider";
 import { usePulseKeeper } from "@/providers/PulseKeeperProvider";
 import ConnectButton from "./ConnectButton";
-import CreateSessionAccountButton from "./CreateSessionAccount";
 import SetupWizard from "./SetupWizard";
 import Dashboard from "./Dashboard";
 import PulseKeeperHero from "./PulseKeeperHero";
@@ -14,11 +12,10 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { Loader2 } from "lucide-react";
 
-type AppStep = "connect" | "session" | "setup" | "dashboard";
+type AppStep = "connect" | "setup" | "dashboard";
 
 export default function MainApp() {
   const { isConnected, isConnecting } = useAccount();
-  const { sessionAccount, isLoading: isSessionLoading } = useSessionAccount();
   const { permission } = usePermissions();
   const {
     isSetupComplete,
@@ -36,14 +33,12 @@ export default function MainApp() {
   useEffect(() => {
     if (!isConnected) {
       setCurrentStep("connect");
-    } else if (!sessionAccount) {
-      setCurrentStep("session");
     } else if (!isSetupComplete) {
       setCurrentStep("setup");
     } else {
       setCurrentStep("dashboard");
     }
-  }, [isConnected, sessionAccount, isSetupComplete]);
+  }, [isConnected, isSetupComplete]);
 
   const renderContent = () => {
     switch (currentStep) {
@@ -75,34 +70,6 @@ export default function MainApp() {
           </div>
         );
 
-      case "session":
-        return (
-          <div className="space-y-6">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                Create Session Account
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                PulseKeeper needs a session account to execute transactions on your behalf when you go
-                inactive. This account will only be able to transfer funds to your designated backup
-                addresses.
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                The session account is created locally and the private key is stored in your browser
-                session. In production, this would be managed by a secure backend service.
-              </p>
-            </div>
-            {isSessionLoading ? (
-              <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-400 py-4">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Creating session account...
-              </div>
-            ) : (
-              <CreateSessionAccountButton />
-            )}
-          </div>
-        );
-
       case "setup":
         return <SetupWizard onComplete={completeSetup} />;
 
@@ -111,7 +78,7 @@ export default function MainApp() {
           <Dashboard
             backups={backups}
             tokenAllowances={tokenAllowances}
-            pulsePeriodDays={pulseSettings.pulsePeriodDays}
+            pulsePeriodSeconds={pulseSettings.pulsePeriodSeconds}
             lastCheckIn={lastCheckIn}
             isDistributing={isDistributing}
             onCheckIn={checkIn}
