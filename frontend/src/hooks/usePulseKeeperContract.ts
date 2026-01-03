@@ -13,8 +13,7 @@ import { Backup } from "@/components/BackupAddresses";
 /**
  * Hook for interacting with the PulseKeeper Registry contract.
  * 
- * Note: User actions (register, checkIn, etc.) use direct wallet transactions.
- * The bundler/smart account pattern is only for delegated operations (backend redemption).
+
  */
 export function usePulseKeeperContract() {
   const { address } = useAccount();

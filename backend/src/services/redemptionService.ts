@@ -76,12 +76,13 @@ async function createSessionSmartAccount() {
 }
 
 /**
- * Create bundler client with ERC-7710 actions
+ * Create bundler client with ERC-7710 actions and paymaster for gas sponsorship
  */
 function createRedemptionBundlerClient() {
   return createBundlerClient({
     client: publicClient,
     transport: http(PIMLICO_BUNDLER_URL),
+    paymaster: true, // Enable Pimlico paymaster for gas sponsorship
   }).extend(erc7710BundlerActions());
 }
 
