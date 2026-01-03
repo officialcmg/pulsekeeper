@@ -69,7 +69,7 @@ export const PULSEKEEPER_REGISTRY_ABI = [
       { name: "registered", type: "bool" },
       { name: "lastCheckIn", type: "uint256" },
       { name: "deadline", type: "uint256" },
-      { name: "pulsePeriodDays", type: "uint256" },
+      { name: "pulsePeriodSeconds", type: "uint256" },
       {
         components: [
           { name: "addr", type: "address" },
@@ -80,6 +80,18 @@ export const PULSEKEEPER_REGISTRY_ABI = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "user", type: "address" },
+      { name: "token", type: "address" },
+      { name: "backupAddresses", type: "address[]" },
+      { name: "amounts", type: "uint256[]" },
+    ],
+    name: "recordDistribution",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const;

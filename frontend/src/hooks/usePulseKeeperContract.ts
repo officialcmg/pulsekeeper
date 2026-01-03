@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback } from "react";
-import { Address } from "viem";
-import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { useCallback, useMemo } from "react";
+import { Address, encodeFunctionData, http } from "viem";
+import { useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
+import { createBundlerClient } from "viem/account-abstraction";
+import { createPimlicoClient } from "permissionless/clients/pimlico";
+import {
+  Implementation,
+  toMetaMaskSmartAccount,
+} from "@metamask/smart-accounts-kit";
 import {
   PULSEKEEPER_REGISTRY_ADDRESS,
   PULSEKEEPER_REGISTRY_ABI,
@@ -14,6 +20,29 @@ export function usePulseKeeperContract() {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const chainId = useChainId();
+
+  // Create Pimlico client for gas estimation
+  const pimlicoClient = useMemo(() => {
+    const pimlicoKey = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
+    if (!pimlicoKey) return null;
+    
+    return createPimlicoClient({
+      transport: http(`https://api.pimlico.io/v2/${chainId}/rpc?apikey=${pimlicoKey}`),
+    });
+  }, [chainId]);
+
+  // Create bundler client with paymaster for gas sponsorship
+  const bundlerClient = useMemo(() => {
+    const pimlicoKey = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
+    if (!pimlicoKey || !publicClient) return null;
+
+    return createBundlerClient({
+      client: publicClient,
+      transport: http(`https://api.pimlico.io/v2/${chainId}/rpc?apikey=${pimlicoKey}`),
+      paymaster: true, // Enable gas sponsorship
+    });
+  }, [chainId, publicClient]);
 
   // Convert frontend Backup type to contract BackupStruct
   const toBackupStruct = (backup: Backup): BackupStruct => ({
@@ -21,81 +50,177 @@ export function usePulseKeeperContract() {
     allocationBps: backup.allocationBps,
   });
 
-  // Register user with initial configuration
+  // Helper to get gas prices from Pimlico
+  const getGasPrices = useCallback(async () => {
+    if (!pimlicoClient) {
+      // Fallback to reasonable defaults
+      return {
+        maxFeePerGas: 50000000000n, // 50 gwei
+        maxPriorityFeePerGas: 5000000000n, // 5 gwei
+      };
+    }
+    
+    const { fast } = await pimlicoClient.getUserOperationGasPrice();
+    return fast;
+  }, [pimlicoClient]);
+
+  // Helper to create smart account from connected wallet
+  const getSmartAccount = useCallback(async () => {
+    if (!walletClient || !publicClient || !address) {
+      throw new Error("Wallet not connected");
+    }
+
+    // Create a MetaMask smart account using the connected wallet
+    // For EIP-7702, the user's EOA is upgraded to a smart account
+    // Use WalletSignerConfig which expects a walletClient
+    const smartAccount = await toMetaMaskSmartAccount({
+      client: publicClient,
+      implementation: Implementation.Stateless7702,
+      address: address,
+      signer: { 
+        walletClient: walletClient,
+      },
+    });
+
+    return smartAccount;
+  }, [walletClient, publicClient, address]);
+
+  // Register user with initial configuration using smart account
   const register = useCallback(
     async (pulsePeriodSeconds: number, backups: Backup[]) => {
-      if (!walletClient || !address) {
-        throw new Error("Wallet not connected");
+      if (!bundlerClient || !walletClient || !address) {
+        throw new Error("Wallet or bundler not connected");
       }
 
       const backupStructs = backups.map(toBackupStruct);
+      const smartAccount = await getSmartAccount();
+      const fee = await getGasPrices();
 
-      const hash = await walletClient.writeContract({
-        address: PULSEKEEPER_REGISTRY_ADDRESS,
+      // Encode the contract call
+      const callData = encodeFunctionData({
         abi: PULSEKEEPER_REGISTRY_ABI,
         functionName: "register",
         args: [BigInt(pulsePeriodSeconds), backupStructs],
       });
 
-      return hash;
+      // Send user operation with gas sponsorship
+      const userOpHash = await bundlerClient.sendUserOperation({
+        account: smartAccount,
+        calls: [{
+          to: PULSEKEEPER_REGISTRY_ADDRESS,
+          data: callData,
+        }],
+        ...fee,
+      });
+
+      // Wait for receipt
+      const { receipt } = await bundlerClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+
+      return receipt.transactionHash;
     },
-    [walletClient, address]
+    [bundlerClient, walletClient, address, getSmartAccount, getGasPrices]
   );
 
-  // Set backups on the contract
+  // Set backups on the contract using smart account
   const setBackups = useCallback(
     async (backups: Backup[]) => {
-      if (!walletClient || !address) {
-        throw new Error("Wallet not connected");
+      if (!bundlerClient || !walletClient || !address) {
+        throw new Error("Wallet or bundler not connected");
       }
 
       const backupStructs = backups.map(toBackupStruct);
+      const smartAccount = await getSmartAccount();
+      const fee = await getGasPrices();
 
-      const hash = await walletClient.writeContract({
-        address: PULSEKEEPER_REGISTRY_ADDRESS,
+      const callData = encodeFunctionData({
         abi: PULSEKEEPER_REGISTRY_ABI,
         functionName: "setBackups",
         args: [backupStructs],
       });
 
-      return hash;
+      const userOpHash = await bundlerClient.sendUserOperation({
+        account: smartAccount,
+        calls: [{
+          to: PULSEKEEPER_REGISTRY_ADDRESS,
+          data: callData,
+        }],
+        ...fee,
+      });
+
+      const { receipt } = await bundlerClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+
+      return receipt.transactionHash;
     },
-    [walletClient, address]
+    [bundlerClient, walletClient, address, getSmartAccount, getGasPrices]
   );
 
-  // Check in to reset the timer
+  // Check in to reset the timer using smart account
   const checkIn = useCallback(async () => {
-    if (!walletClient || !address) {
-      throw new Error("Wallet not connected");
+    if (!bundlerClient || !walletClient || !address) {
+      throw new Error("Wallet or bundler not connected");
     }
 
-    const hash = await walletClient.writeContract({
-      address: PULSEKEEPER_REGISTRY_ADDRESS,
+    const smartAccount = await getSmartAccount();
+    const fee = await getGasPrices();
+
+    const callData = encodeFunctionData({
       abi: PULSEKEEPER_REGISTRY_ABI,
       functionName: "checkIn",
       args: [],
     });
 
-    return hash;
-  }, [walletClient, address]);
+    const userOpHash = await bundlerClient.sendUserOperation({
+      account: smartAccount,
+      calls: [{
+        to: PULSEKEEPER_REGISTRY_ADDRESS,
+        data: callData,
+      }],
+      ...fee,
+    });
 
-  // Set pulse period
+    const { receipt } = await bundlerClient.waitForUserOperationReceipt({
+      hash: userOpHash,
+    });
+
+    return receipt.transactionHash;
+  }, [bundlerClient, walletClient, address, getSmartAccount, getGasPrices]);
+
+  // Set pulse period using smart account
   const setPulsePeriod = useCallback(
     async (pulsePeriodSeconds: number) => {
-      if (!walletClient || !address) {
-        throw new Error("Wallet not connected");
+      if (!bundlerClient || !walletClient || !address) {
+        throw new Error("Wallet or bundler not connected");
       }
 
-      const hash = await walletClient.writeContract({
-        address: PULSEKEEPER_REGISTRY_ADDRESS,
+      const smartAccount = await getSmartAccount();
+      const fee = await getGasPrices();
+
+      const callData = encodeFunctionData({
         abi: PULSEKEEPER_REGISTRY_ABI,
         functionName: "setPulsePeriod",
         args: [BigInt(pulsePeriodSeconds)],
       });
 
-      return hash;
+      const userOpHash = await bundlerClient.sendUserOperation({
+        account: smartAccount,
+        calls: [{
+          to: PULSEKEEPER_REGISTRY_ADDRESS,
+          data: callData,
+        }],
+        ...fee,
+      });
+
+      const { receipt } = await bundlerClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+
+      return receipt.transactionHash;
     },
-    [walletClient, address]
+    [bundlerClient, walletClient, address, getSmartAccount, getGasPrices]
   );
 
   // Get last check-in timestamp

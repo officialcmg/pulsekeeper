@@ -1,7 +1,7 @@
 import { Address } from "viem";
 
-// PulseKeeper Registry contract address (deployed on Sepolia )
-export const PULSEKEEPER_REGISTRY_ADDRESS: Address = "0x583A4b5b7154d4C8Bf1ACD62CB1e9C8Aa3f99Cd5";
+// PulseKeeper Registry contract address (deployed on Sepolia)
+export const PULSEKEEPER_REGISTRY_ADDRESS: Address = "0x7231C8225D970Dd67e8Afda5348Ddc2afb0Ac237";
 
 // PulseKeeper Registry ABI - matches contracts/src/PulseKeeperRegistry.sol
 export const PULSEKEEPER_REGISTRY_ABI = [
@@ -183,6 +183,43 @@ export const PULSEKEEPER_REGISTRY_ABI = [
     ],
     name: "PulsePeriodUpdated",
     type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: true, name: "backup", type: "address" },
+      { indexed: true, name: "token", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+      { indexed: false, name: "timestamp", type: "uint256" },
+    ],
+    name: "Distribution",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: true, name: "token", type: "address" },
+      { indexed: false, name: "totalAmount", type: "uint256" },
+      { indexed: false, name: "backupCount", type: "uint256" },
+      { indexed: false, name: "timestamp", type: "uint256" },
+    ],
+    name: "DistributionBatch",
+    type: "event",
+  },
+  // recordDistribution function
+  {
+    inputs: [
+      { name: "user", type: "address" },
+      { name: "token", type: "address" },
+      { name: "backupAddresses", type: "address[]" },
+      { name: "amounts", type: "uint256[]" },
+    ],
+    name: "recordDistribution",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   // Errors
   {

@@ -256,4 +256,65 @@ contract PulseKeeperRegistryTest is Test {
         assertFalse(registry.isActive(user));
         assertTrue(registry.isDistributing(user));
     }
+
+    function test_RecordDistribution_ETH() public {
+        address[] memory backupAddresses = new address[](2);
+        backupAddresses[0] = backup1;
+        backupAddresses[1] = backup2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1 ether;
+        amounts[1] = 0.5 ether;
+
+        // Expect Distribution events for each backup
+        vm.expectEmit(true, true, true, true);
+        emit PulseKeeperRegistry.Distribution(user, backup1, address(0), 1 ether, block.timestamp);
+        
+        vm.expectEmit(true, true, true, true);
+        emit PulseKeeperRegistry.Distribution(user, backup2, address(0), 0.5 ether, block.timestamp);
+        
+        // Expect DistributionBatch event
+        vm.expectEmit(true, true, false, true);
+        emit PulseKeeperRegistry.DistributionBatch(user, address(0), 1.5 ether, 2, block.timestamp);
+
+        registry.recordDistribution(user, address(0), backupAddresses, amounts);
+    }
+
+    function test_RecordDistribution_ERC20() public {
+        address token = address(0xdead);
+        
+        address[] memory backupAddresses = new address[](1);
+        backupAddresses[0] = backup1;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1000e18;
+
+        vm.expectEmit(true, true, true, true);
+        emit PulseKeeperRegistry.Distribution(user, backup1, token, 1000e18, block.timestamp);
+        
+        vm.expectEmit(true, true, false, true);
+        emit PulseKeeperRegistry.DistributionBatch(user, token, 1000e18, 1, block.timestamp);
+
+        registry.recordDistribution(user, token, backupAddresses, amounts);
+    }
+
+    function test_RecordDistribution_RevertWhen_LengthMismatch() public {
+        address[] memory backupAddresses = new address[](2);
+        backupAddresses[0] = backup1;
+        backupAddresses[1] = backup2;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1 ether;
+
+        vm.expectRevert("Length mismatch");
+        registry.recordDistribution(user, address(0), backupAddresses, amounts);
+    }
+
+    function test_RecordDistribution_RevertWhen_Empty() public {
+        address[] memory backupAddresses = new address[](0);
+        uint256[] memory amounts = new uint256[](0);
+
+        vm.expectRevert("No distributions");
+        registry.recordDistribution(user, address(0), backupAddresses, amounts);
+    }
 }
