@@ -255,7 +255,9 @@ export async function redeemForUser(userAddress: string): Promise<RedemptionResu
 
       // Build calls for this token
       const calls = [];
-      const isNativeToken = tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+      // Check for both common native ETH representations
+      const isNativeToken = tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+                           tokenAddress.toLowerCase() === '0x0000000000000000000000000000000000000000';
 
       for (const [backupAddr, amount] of backupAmounts) {
         if (amount === 0n) continue;
@@ -407,7 +409,9 @@ export async function redeemSpecificAmount(
 
     // Build calls
     const calls = [];
-    const isNativeToken = tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+    // Check for both common native ETH representations
+    const isNativeToken = tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+                          tokenAddress.toLowerCase() === '0x0000000000000000000000000000000000000000';
     const permissionsContext = permission.permissionsContext as Hex;
     const delegationManager = permission.delegationManager as Address;
 
