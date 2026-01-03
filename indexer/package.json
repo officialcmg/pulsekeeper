@@ -1,7 +1,6 @@
 {
   "name": "pulsekeeper-indexer",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "codegen": "envio codegen",
     "dev": "envio dev",
