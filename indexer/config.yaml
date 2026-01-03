@@ -6,7 +6,7 @@ networks:
   - id: 11155111  # Sepolia
     start_block: 9972642  # PulseKeeperRegistry deployment block
     rpc_config:
-      url: https://sepolia.rpc.hypersync.xyz
+      url: https://11155111.rpc.hypersync.xyz
     contracts:
       - name: PulseKeeperRegistry
         address: "0x82C1A7C28FA5b364893D6c124D93CBb2E02910e9"
