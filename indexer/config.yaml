@@ -5,7 +5,7 @@ description: PulseKeeper distribution tracking indexer
 networks:
   - id: 11155111  # Sepolia
     start_block: 9972642  # PulseKeeperRegistry deployment block
-    hypersync_config:
+    rpc_config:
       url: https://sepolia.hypersync.xyz
     contracts:
       - name: PulseKeeperRegistry
