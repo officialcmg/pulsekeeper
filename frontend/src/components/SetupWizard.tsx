@@ -160,6 +160,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           const tokenAllowance = tokenAllowances[i];
           
           try {
+            // Convert human-readable amount to wei for backend storage
+            const periodAmountWei = parseUnits(tokenAllowance.amount, tokenAllowance.token.decimals);
+            
             const response = await fetch(`${backendUrl}/api/permissions/store`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -168,7 +171,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 tokenAddress: tokenAllowance.token.address,
                 permissionsContext: permission.context,
                 delegationManager: permission.signerMeta?.delegationManager || '',
-                periodAmount: tokenAllowance.amount,
+                periodAmount: periodAmountWei.toString(),
                 periodDurationSeconds: tokenAllowance.periodDays * 24 * 60 * 60,
               }),
             });
