@@ -21,13 +21,14 @@ contract PulseKeeperRegistryTest is Test {
         backups[0] = PulseKeeperRegistry.Backup(backup1, 5000);
         backups[1] = PulseKeeperRegistry.Backup(backup2, 5000);
 
+        uint256 pulsePeriodSeconds = 30 days; // 30 days in seconds
         vm.prank(user);
-        registry.register(30, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
         assertTrue(registry.isRegistered(user));
-        assertEq(registry.getPulsePeriod(user), 30);
+        assertEq(registry.getPulsePeriod(user), pulsePeriodSeconds);
         assertEq(registry.getLastCheckIn(user), block.timestamp);
-        assertEq(registry.getDeadline(user), block.timestamp + 30 days);
+        assertEq(registry.getDeadline(user), block.timestamp + pulsePeriodSeconds);
         assertTrue(registry.isActive(user));
         assertFalse(registry.isDistributing(user));
     }
@@ -37,8 +38,9 @@ contract PulseKeeperRegistryTest is Test {
         PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
+        uint256 pulsePeriodSeconds = 7 days;
         vm.prank(user);
-        registry.register(7, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
         uint256 initialDeadline = registry.getDeadline(user);
 
@@ -50,8 +52,8 @@ contract PulseKeeperRegistryTest is Test {
         registry.checkIn();
 
         assertEq(registry.getLastCheckIn(user), block.timestamp);
-        // Deadline should be updated to new timestamp + 7 days
-        assertEq(registry.getDeadline(user), block.timestamp + 7 days);
+        // Deadline should be updated to new timestamp + pulsePeriodSeconds
+        assertEq(registry.getDeadline(user), block.timestamp + pulsePeriodSeconds);
         assertTrue(registry.isActive(user));
     }
 
@@ -65,11 +67,12 @@ contract PulseKeeperRegistryTest is Test {
         PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
+        uint256 pulsePeriodSeconds = 7 days;
         vm.prank(user);
-        registry.register(7, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
         // Advance time past deadline
-        vm.warp(block.timestamp + 8 days);
+        vm.warp(block.timestamp + pulsePeriodSeconds + 1);
 
         assertFalse(registry.isActive(user));
         assertTrue(registry.isDistributing(user));
@@ -81,7 +84,7 @@ contract PulseKeeperRegistryTest is Test {
         initialBackups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
         vm.prank(user);
-        registry.register(30, initialBackups);
+        registry.register(30 days, initialBackups);
 
         // Update backups
         PulseKeeperRegistry.Backup[] memory newBackups = new PulseKeeperRegistry.Backup[](3);
@@ -114,17 +117,18 @@ contract PulseKeeperRegistryTest is Test {
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
         vm.prank(user);
-        registry.register(30, backups);
+        registry.register(30 days, backups);
 
         uint256 lastCheckIn = registry.getLastCheckIn(user);
 
-        // Update pulse period
+        // Update pulse period to 14 days in seconds
+        uint256 newPulsePeriodSeconds = 14 days;
         vm.prank(user);
-        registry.setPulsePeriod(14);
+        registry.setPulsePeriod(newPulsePeriodSeconds);
 
-        assertEq(registry.getPulsePeriod(user), 14);
+        assertEq(registry.getPulsePeriod(user), newPulsePeriodSeconds);
         // Deadline should be recalculated from lastCheckIn
-        assertEq(registry.getDeadline(user), lastCheckIn + 14 days);
+        assertEq(registry.getDeadline(user), lastCheckIn + newPulsePeriodSeconds);
     }
 
     function test_SetPulsePeriod_RevertWhen_NotRegistered() public {
@@ -140,7 +144,7 @@ contract PulseKeeperRegistryTest is Test {
 
         vm.prank(user);
         vm.expectRevert(PulseKeeperRegistry.InvalidAllocation.selector);
-        registry.register(30, backups);
+        registry.register(30 days, backups);
     }
 
     function test_RevertWhen_ZeroPulsePeriod() public {
@@ -157,17 +161,18 @@ contract PulseKeeperRegistryTest is Test {
 
         vm.prank(user);
         vm.expectRevert(PulseKeeperRegistry.NoBackupsSet.selector);
-        registry.register(30, backups);
+        registry.register(30 days, backups);
     }
 
     function test_GetDeadline() public {
         PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
+        uint256 pulsePeriodSeconds = 30 days;
         vm.prank(user);
-        registry.register(30, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
-        uint256 expectedDeadline = block.timestamp + 30 days;
+        uint256 expectedDeadline = block.timestamp + pulsePeriodSeconds;
         assertEq(registry.getDeadline(user), expectedDeadline);
     }
 
@@ -176,21 +181,22 @@ contract PulseKeeperRegistryTest is Test {
         backups[0] = PulseKeeperRegistry.Backup(backup1, 6000);
         backups[1] = PulseKeeperRegistry.Backup(backup2, 4000);
 
+        uint256 pulsePeriodSeconds = 14 days;
         vm.prank(user);
-        registry.register(14, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
         (
             bool registered,
             uint256 lastCheckIn,
             uint256 deadline,
-            uint256 pulsePeriodDays,
+            uint256 storedPulsePeriodSeconds,
             PulseKeeperRegistry.Backup[] memory storedBackups
         ) = registry.getUserConfig(user);
 
         assertTrue(registered);
         assertEq(lastCheckIn, block.timestamp);
-        assertEq(deadline, block.timestamp + 14 days);
-        assertEq(pulsePeriodDays, 14);
+        assertEq(deadline, block.timestamp + pulsePeriodSeconds);
+        assertEq(storedPulsePeriodSeconds, pulsePeriodSeconds);
         assertEq(storedBackups.length, 2);
     }
 
@@ -202,26 +208,52 @@ contract PulseKeeperRegistryTest is Test {
         PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
+        uint256 pulsePeriodSeconds = 30 days;
         vm.expectEmit(true, false, false, true);
-        emit PulseKeeperRegistry.UserRegistered(user, 30, block.timestamp, block.timestamp + 30 days);
+        emit PulseKeeperRegistry.UserRegistered(user, pulsePeriodSeconds, block.timestamp, block.timestamp + pulsePeriodSeconds);
 
         vm.prank(user);
-        registry.register(30, backups);
+        registry.register(pulsePeriodSeconds, backups);
     }
 
     function test_Events_CheckIn() public {
         PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
         backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
 
+        uint256 pulsePeriodSeconds = 7 days;
         vm.prank(user);
-        registry.register(7, backups);
+        registry.register(pulsePeriodSeconds, backups);
 
         vm.warp(block.timestamp + 3 days);
 
         vm.expectEmit(true, false, false, true);
-        emit PulseKeeperRegistry.CheckIn(user, block.timestamp, block.timestamp + 7 days);
+        emit PulseKeeperRegistry.CheckIn(user, block.timestamp, block.timestamp + pulsePeriodSeconds);
 
         vm.prank(user);
         registry.checkIn();
+    }
+
+    function test_ShortPulsePeriod_Seconds() public {
+        // Test with very short period (60 seconds) for demo purposes
+        PulseKeeperRegistry.Backup[] memory backups = new PulseKeeperRegistry.Backup[](1);
+        backups[0] = PulseKeeperRegistry.Backup(backup1, 10000);
+
+        uint256 pulsePeriodSeconds = 60; // 60 seconds
+        vm.prank(user);
+        registry.register(pulsePeriodSeconds, backups);
+
+        assertEq(registry.getPulsePeriod(user), 60);
+        assertEq(registry.getDeadline(user), block.timestamp + 60);
+        assertTrue(registry.isActive(user));
+
+        // Advance 30 seconds - still active
+        vm.warp(block.timestamp + 30);
+        assertTrue(registry.isActive(user));
+        assertFalse(registry.isDistributing(user));
+
+        // Advance past deadline
+        vm.warp(block.timestamp + 31);
+        assertFalse(registry.isActive(user));
+        assertTrue(registry.isDistributing(user));
     }
 }
