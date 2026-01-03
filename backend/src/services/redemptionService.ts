@@ -152,42 +152,6 @@ function buildErc20TransferCall(
   };
 }
 
-/**
- * Record distribution on-chain for indexer tracking
- * Calls the recordDistribution function on the PulseKeeperRegistry contract
- */
-async function recordDistributionOnChain(
-  userAddress: Address,
-  tokenAddress: Address,
-  backupAddresses: Address[],
-  amounts: bigint[],
-  sessionSmartAccount: Awaited<ReturnType<typeof createSessionSmartAccount>>,
-  bundlerClient: ReturnType<typeof createRedemptionBundlerClient>
-) {
-  const callData = encodeFunctionData({
-    abi: PULSEKEEPER_REGISTRY_ABI,
-    functionName: 'recordDistribution',
-    args: [userAddress, tokenAddress, backupAddresses, amounts],
-  });
-
-  const fee = {
-    maxFeePerGas: 50000000000n,
-    maxPriorityFeePerGas: 5000000000n,
-  };
-
-  const userOpHash = await bundlerClient.sendUserOperation({
-    account: sessionSmartAccount,
-    calls: [{
-      to: PULSEKEEPER_REGISTRY_ADDRESS,
-      data: callData,
-    }],
-    ...fee,
-  });
-
-  await bundlerClient.waitForUserOperationReceipt({
-    hash: userOpHash,
-  });
-}
 
 /**
  * Main redemption service function
@@ -317,26 +281,6 @@ export async function redeemForUser(userAddress: string): Promise<RedemptionResu
           if (dist.tokenAddress === tokenAddress && !dist.txHash) {
             dist.txHash = receipt.transactionHash;
           }
-        }
-
-        // Record distribution on-chain for indexer
-        try {
-          const backupAddresses = Array.from(backupAmounts.keys());
-          const amounts = Array.from(backupAmounts.values());
-          // Use address(0) for native ETH, actual token address for ERC20
-          const tokenForEvent = isNativeToken ? '0x0000000000000000000000000000000000000000' as Address : tokenAddress as Address;
-          
-          await recordDistributionOnChain(
-            userAddr,
-            tokenForEvent,
-            backupAddresses,
-            amounts,
-            sessionSmartAccount,
-            bundlerClient
-          );
-          console.log(`   📊 Distribution recorded on-chain for indexer`);
-        } catch (recordError: any) {
-          console.warn(`   ⚠️ Failed to record distribution on-chain: ${recordError.message}`);
         }
 
         // Record redemption in database

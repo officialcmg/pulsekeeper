@@ -38,23 +38,6 @@ contract PulseKeeperRegistry {
     
     event BackupsUpdated(address indexed user, Backup[] backups);
     event PulsePeriodUpdated(address indexed user, uint256 pulsePeriodSeconds, uint256 newDeadline);
-    
-    // Distribution events for indexer - emitted when funds are sent to backups
-    event Distribution(
-        address indexed user,
-        address indexed backup,
-        address indexed token,  // address(0) for native ETH
-        uint256 amount,
-        uint256 timestamp
-    );
-    
-    event DistributionBatch(
-        address indexed user,
-        address indexed token,  // address(0) for native ETH
-        uint256 totalAmount,
-        uint256 backupCount,
-        uint256 timestamp
-    );
 
     error InvalidAllocation();
     error NoBackupsSet();
@@ -243,31 +226,4 @@ contract PulseKeeperRegistry {
         if (totalBps != 10000) revert InvalidAllocation();
     }
 
-    /**
-     * @notice Record a distribution event for indexing purposes
-     * @dev Called by the redemption service after successfully transferring funds
-     * @param user The user whose funds were distributed
-     * @param token The token address (address(0) for native ETH)
-     * @param backupAddresses Array of backup addresses that received funds
-     * @param amounts Array of amounts sent to each backup
-     */
-    function recordDistribution(
-        address user,
-        address token,
-        address[] calldata backupAddresses,
-        uint256[] calldata amounts
-    ) external {
-        require(backupAddresses.length == amounts.length, "Length mismatch");
-        require(backupAddresses.length > 0, "No distributions");
-        
-        uint256 totalAmount = 0;
-        uint256 currentTime = block.timestamp;
-        
-        for (uint256 i = 0; i < backupAddresses.length; i++) {
-            emit Distribution(user, backupAddresses[i], token, amounts[i], currentTime);
-            totalAmount += amounts[i];
-        }
-        
-        emit DistributionBatch(user, token, totalAmount, backupAddresses.length, currentTime);
-    }
 }

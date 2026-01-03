@@ -82,16 +82,4 @@ export const PULSEKEEPER_REGISTRY_ABI = [
     stateMutability: "view",
     type: "function",
   },
-  {
-    inputs: [
-      { name: "user", type: "address" },
-      { name: "token", type: "address" },
-      { name: "backupAddresses", type: "address[]" },
-      { name: "amounts", type: "uint256[]" },
-    ],
-    name: "recordDistribution",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
 ] as const;
