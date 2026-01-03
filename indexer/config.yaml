@@ -1,42 +1,41 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: pulsekeeper-indexer
 description: PulseKeeper distribution tracking indexer
 
-contracts:
-  - name: PulseKeeperRegistry
-    abi_file_path: ./abis/PulseKeeperRegistry.json
-    handler: ./src/EventHandlers.ts
-    events:
-      - event: "UserRegistered(address indexed user, uint256 pulsePeriodSeconds, uint256 timestamp, uint256 deadline)"
-      - event: "CheckIn(address indexed user, uint256 timestamp, uint256 deadline)"
-      - event: "BackupsUpdated(address indexed user, (address,uint16)[] backups)"
-      - event: "PulsePeriodUpdated(address indexed user, uint256 pulsePeriodSeconds, uint256 newDeadline)"
-
-  - name: ERC20TransferAmountEnforcer
-    abi_file_path: ./abis/ERC20TransferAmountEnforcer.json
-    handler: ./src/EventHandlers.ts
-    events:
-      - event: "TransferredInPeriod(address indexed delegationManager, address indexed delegator, bytes32 indexed delegationHash, address token, uint256 amount, uint256 periodDuration, uint256 periodStart, uint256 spent, uint256 timestamp)"
-
-  - name: NativeTokenTransferAmountEnforcer
-    abi_file_path: ./abis/NativeTokenTransferAmountEnforcer.json
-    handler: ./src/EventHandlers.ts
-    events:
-      - event: "TransferredInPeriod(address indexed delegationManager, address indexed delegator, bytes32 indexed delegationHash, address token, uint256 amount, uint256 periodDuration, uint256 periodStart, uint256 spent, uint256 timestamp)"
-        name: NativeTransferredInPeriod
+networks:
+  - id: 11155111  # Sepolia
+    start_block: 9972642  # PulseKeeperRegistry deployment block
+    hypersync_config:
+      url: https://sepolia.hypersync.xyz
+    contracts:
+      - name: PulseKeeperRegistry
+        address: "0x82C1A7C28FA5b364893D6c124D93CBb2E02910e9"
+        abi_file_path: ./abis/PulseKeeperRegistry.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: "UserRegistered(address indexed user, uint256 pulsePeriodSeconds, uint256 timestamp, uint256 deadline)"
+          - event: "CheckIn(address indexed user, uint256 timestamp, uint256 deadline)"
+          - event: "BackupsUpdated(address indexed user, (address,uint16)[] backups)"
+          - event: "PulsePeriodUpdated(address indexed user, uint256 pulsePeriodSeconds, uint256 newDeadline)"
+      
+      - name: ERC20TransferAmountEnforcer
+        address: "0x474e3ae7e169e940607cc624da8a15eb120139ab"
+        abi_file_path: ./abis/ERC20TransferAmountEnforcer.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: "TransferredInPeriod(address indexed delegationManager, address indexed delegator, bytes32 indexed delegationHash, address token, uint256 amount, uint256 periodDuration, uint256 periodStart, uint256 spent, uint256 timestamp)"
+      
+      - name: NativeTokenTransferAmountEnforcer
+        address: "0x9bc0faf4aca5ae429f4c06aeeac517520cb16bd9"
+        abi_file_path: ./abis/NativeTokenTransferAmountEnforcer.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: "TransferredInPeriod(address indexed delegationManager, address indexed delegator, bytes32 indexed delegationHash, address token, uint256 amount, uint256 periodDuration, uint256 periodStart, uint256 spent, uint256 timestamp)"
+            name: NativeTransferredInPeriod
 
 field_selection:
   transaction_fields:
     - hash
 
-networks:
-  - id: 11155111  # Sepolia
-    start_block: 9972642  # PulseKeeperRegistry deployment block
-    contracts:
-      - name: PulseKeeperRegistry
-        address: "0x82C1A7C28FA5b364893D6c124D93CBb2E02910e9"
-      - name: ERC20TransferAmountEnforcer
-        address: "0x474e3ae7e169e940607cc624da8a15eb120139ab"
-      - name: NativeTokenTransferAmountEnforcer
-        address: "0x9bc0faf4aca5ae429f4c06aeeac517520cb16bd9"
-
 preload_handlers: true
+address_format: lowercase
