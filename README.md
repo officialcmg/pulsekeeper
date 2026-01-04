@@ -1,6 +1,6 @@
 # PulseKeeper 
 
-**Dead Man's Switch for Crypto Assets** — Automatically distribute your funds to designated backups if you become inactive.
+**Your crypto stays safe, even when you can't access it** — Automatically distribute your funds to designated backups if you become inactive.
 
 Built with MetaMask Smart Accounts, EIP-7710 Delegations, and EIP-7702 Account Abstraction.
 
