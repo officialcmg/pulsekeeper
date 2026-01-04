@@ -1,4 +1,4 @@
-# PulseKeeper 💓
+# PulseKeeper 
 
 **Dead Man's Switch for Crypto Assets** — Automatically distribute your funds to designated backups if you become inactive.
 
@@ -6,11 +6,11 @@ Built with MetaMask Smart Accounts, EIP-7710 Delegations, and EIP-7702 Account A
 
 ## 🎯 Problem
 
-What happens to your crypto when you're gone? Traditional finance has beneficiaries, trusts, and estate planning. Crypto has... nothing. Your funds could be locked forever.
+Over $140 billion in crypto is permanently lost. Lost keys, lost seed phrases, accidents
 
 ## 💡 Solution
 
-PulseKeeper is a dead man's switch that:
+PulseKeeper is a non custodial backup app that:
 1. **Monitors your activity** via periodic check-ins
 2. **Distributes funds automatically** to your designated backups when you miss a deadline
 3. **Uses advanced permissions** so you stay in full control until distribution
@@ -227,4 +227,4 @@ MIT
 
 ---
 
-**Built for MetaMask Hackathon 2025** 🦊
+**Built for MetaMask Advanced Permissions Hackathon 2025** 🦊
