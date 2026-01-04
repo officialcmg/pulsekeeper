@@ -4,14 +4,11 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { usePermissions } from "@/providers/PermissionProvider";
 import { usePulseKeeper } from "@/providers/PulseKeeperProvider";
-import { useDistributionSubscription } from "@/hooks/useDistributionSubscription";
 import ConnectButton from "./ConnectButton";
 import SetupWizard from "./SetupWizard";
 import Dashboard from "./Dashboard";
 import PulseKeeperHero from "./PulseKeeperHero";
 import Header from "./Header";
-import Footer from "./Footer";
-import { DistributionPopup } from "./DistributionPopup";
 import { Loader2 } from "lucide-react";
 
 type AppStep = "connect" | "setup" | "dashboard";
@@ -19,6 +16,7 @@ type AppStep = "connect" | "setup" | "dashboard";
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
 export default function MainApp() {
+ 
   const { isConnected, isConnecting, address } = useAccount();
   const { permission } = usePermissions();
   const {
@@ -35,8 +33,12 @@ export default function MainApp() {
   const [currentStep, setCurrentStep] = useState<AppStep>("connect");
   const distributionTriggeredRef = useRef(false);
   
-  // Subscribe to distributions
-  const { latestDistribution, clearDistribution } = useDistributionSubscription(address);
+  // Store distribution result from API
+  const [distributionResult, setDistributionResult] = useState<{
+    success: boolean;
+    distributions: Array<{ tokenAddress: string; backupAddress: string; amount: string; txHash?: string }>;
+    timestamp: string;
+  } | null>(null);
 
   // Trigger distribution when timer expires
   const triggerDistribution = useCallback(async () => {
@@ -45,16 +47,27 @@ export default function MainApp() {
     
     try {
       console.log("⏰ Timer expired! Triggering distribution...");
-      const response = await fetch(`${BACKEND_URL}/api/distribute`, {
+      const response = await fetch(`${BACKEND_URL}/api/distribution/run`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userAddress: address }),
+        headers: { "Content-Type": "application/json" }
       });
       
+      const data = await response.json();
+      console.log("📦 Distribution response:", data);
+      
       if (!response.ok) {
-        console.error("Distribution failed:", await response.text());
+        console.error("Distribution failed:", data);
       } else {
         console.log("✅ Distribution triggered successfully");
+        // Store result to show in UI
+        if (data.results && data.results.length > 0) {
+          const result = data.results[0];
+          setDistributionResult({
+            success: result.success,
+            distributions: result.distributions || [],
+            timestamp: data.timestamp,
+          });
+        }
       }
     } catch (error) {
       console.error("Error triggering distribution:", error);
@@ -65,6 +78,27 @@ export default function MainApp() {
       distributionTriggeredRef.current = false;
     }, 10000);
   }, [address]);
+
+  // Timer expiration check - SIMPLE version
+  useEffect(() => {
+    console.log("🟢🟢🟢 TIMER EFFECT RUNNING 🟢🟢🟢", { isSetupComplete, lastCheckIn, pulsePeriod: pulseSettings.pulsePeriodSeconds });
+    
+    const interval = setInterval(() => {
+      console.log("🔵 INTERVAL TICK", { isSetupComplete, lastCheckIn: lastCheckIn?.toISOString() });
+      if (!isSetupComplete || !lastCheckIn) return;
+      
+      const deadline = lastCheckIn.getTime() + pulseSettings.pulsePeriodSeconds * 1000;
+      const timeRemaining = deadline - Date.now();
+      console.log("🟡 TIME REMAINING:", timeRemaining, "triggered:", distributionTriggeredRef.current);
+      
+      if (timeRemaining <= 0 && !distributionTriggeredRef.current) {
+        console.log("🔴🔴🔴 TIMER HIT ZERO - CALLING API 🔴🔴🔴");
+        triggerDistribution();
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isSetupComplete, lastCheckIn, pulseSettings.pulsePeriodSeconds, triggerDistribution]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -119,6 +153,7 @@ export default function MainApp() {
             isDistributing={isDistributing}
             onCheckIn={checkIn}
             onTimerExpired={triggerDistribution}
+            distributionResult={distributionResult}
           />
         );
 
@@ -134,13 +169,6 @@ export default function MainApp() {
         {currentStep !== "dashboard" && <PulseKeeperHero />}
         {renderContent()}
       </main>
-      <Footer />
-      
-      {/* Distribution popup - shows when a distribution is detected */}
-      <DistributionPopup 
-        distribution={latestDistribution} 
-        onClose={clearDistribution} 
-      />
     </div>
   );
 }

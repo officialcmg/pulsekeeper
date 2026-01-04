@@ -9,11 +9,18 @@ import {
   ArrowRight,
   Zap,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import Image from "next/image";
 import { Backup } from "./BackupAddresses";
 import { TokenAllowance } from "./TokenSelector";
 import Button from "./Button";
+
+interface DistributionResultType {
+  success: boolean;
+  distributions: Array<{ tokenAddress: string; backupAddress: string; amount: string; txHash?: string }>;
+  timestamp: string;
+}
 
 interface DashboardProps {
   backups: Backup[];
@@ -23,6 +30,7 @@ interface DashboardProps {
   isDistributing: boolean;
   onCheckIn: () => Promise<void>;
   onTimerExpired?: () => Promise<void>;
+  distributionResult?: DistributionResultType | null;
 }
 
 type Status = "protected" | "warning" | "distributing";
@@ -35,10 +43,10 @@ export default function Dashboard({
   isDistributing,
   onCheckIn,
   onTimerExpired,
+  distributionResult,
 }: DashboardProps) {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [now, setNow] = useState(new Date());
-  const [timerExpiredTriggered, setTimerExpiredTriggered] = useState(false);
 
   // Update current time every second for accurate countdown
   useEffect(() => {
@@ -52,22 +60,6 @@ export default function Dashboard({
     : null;
 
   const timeRemaining = deadline ? deadline.getTime() - now.getTime() : 0;
-
-  // Trigger distribution 2 seconds after timer expires
-  useEffect(() => {
-    if (timeRemaining <= 0 && !timerExpiredTriggered && onTimerExpired && lastCheckIn) {
-      setTimerExpiredTriggered(true);
-      const timeout = setTimeout(() => {
-        console.log("⏰ Timer expired + 2s delay - triggering distribution...");
-        onTimerExpired();
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-    // Reset when timer is reset (after check-in)
-    if (timeRemaining > 0 && timerExpiredTriggered) {
-      setTimerExpiredTriggered(false);
-    }
-  }, [timeRemaining, timerExpiredTriggered, onTimerExpired, lastCheckIn]);
   const daysRemaining = Math.max(0, Math.floor(timeRemaining / (24 * 60 * 60 * 1000)));
   const hoursRemaining = Math.max(
     0,
@@ -254,6 +246,43 @@ export default function Dashboard({
           <span>{safePercent.toFixed(1)}% time remaining</span>
         </div>
       </div>
+
+      {/* Distribution Result */}
+      {distributionResult && (
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-6 border border-green-200 dark:border-green-700">
+          <h3 className="font-semibold text-green-800 dark:text-green-200 flex items-center gap-2 mb-4">
+            <CheckCircle className="h-5 w-5" />
+            Distribution Complete
+          </h3>
+          <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+            Funds have been distributed to your backups at {new Date(distributionResult.timestamp).toLocaleString()}
+          </p>
+          <div className="space-y-2">
+            {distributionResult.distributions.map((d, i) => (
+              <div key={i} className="flex items-center justify-between text-sm bg-white dark:bg-gray-800 rounded-lg p-3">
+                <div>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {d.tokenAddress === "0x0000000000000000000000000000000000000000" ? "ETH" : `${d.tokenAddress.slice(0, 6)}...`}
+                  </span>
+                  <span className="mx-2">→</span>
+                  <span className="font-mono text-gray-800 dark:text-gray-200">{d.backupAddress.slice(0, 8)}...</span>
+                </div>
+                {d.txHash && (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${d.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-primary-500 hover:text-primary-400"
+                  >
+                    <span className="font-mono">{d.txHash.slice(0, 10)}...</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Check-in Button */}
       <Button

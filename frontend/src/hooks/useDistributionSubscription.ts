@@ -108,11 +108,10 @@ export function useCheckInSubscription(userAddress: string | undefined) {
   };
 }
 
-// Subscription for ERC20 distributions
+// Subscription for ERC20 distributions - no filter, show all recent
 const ERC20_DISTRIBUTION_SUBSCRIPTION = gql`
-  subscription ERC20Distributions($sender: String!) {
+  subscription ERC20Distributions {
     ERC20PeriodTransferEnforcer_TransferredInPeriod(
-      where: { sender: { _eq: $sender } }
       order_by: { transferTimestamp: desc }
       limit: 1
     ) {
@@ -127,11 +126,10 @@ const ERC20_DISTRIBUTION_SUBSCRIPTION = gql`
   }
 `;
 
-// Subscription for Native token distributions
+// Subscription for Native token distributions - no filter, show all recent
 const NATIVE_DISTRIBUTION_SUBSCRIPTION = gql`
-  subscription NativeDistributions($sender: String!) {
+  subscription NativeDistributions {
     NativeTokenPeriodTransferEnforcer_TransferredInPeriod(
-      where: { sender: { _eq: $sender } }
       order_by: { transferTimestamp: desc }
       limit: 1
     ) {
@@ -160,16 +158,17 @@ export function useDistributionSubscription(userAddress: string | undefined) {
     setLatestDistribution(null);
   }, []);
 
-  // Subscribe to ERC20 distributions
+  // Subscribe to ERC20 distributions (no filter - sender is session account)
   const { loading: erc20Loading, error: erc20Error } = useSubscription(
     ERC20_DISTRIBUTION_SUBSCRIPTION,
     {
-      variables: { sender: userAddress?.toLowerCase() || "" },
       skip: !userAddress,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onData: ({ data }: any) => {
+        console.log("📥 ERC20 distribution data:", data);
         const distribution = data?.data?.ERC20PeriodTransferEnforcer_TransferredInPeriod?.[0];
         if (distribution) {
+          console.log("🎉 New ERC20 distribution!", distribution);
           handleNewDistribution({
             ...distribution,
             token: distribution.token || "",
@@ -179,16 +178,17 @@ export function useDistributionSubscription(userAddress: string | undefined) {
     }
   );
 
-  // Subscribe to Native token distributions
+  // Subscribe to Native token distributions (no filter - sender is session account)
   const { loading: nativeLoading, error: nativeError } = useSubscription(
     NATIVE_DISTRIBUTION_SUBSCRIPTION,
     {
-      variables: { sender: userAddress?.toLowerCase() || "" },
       skip: !userAddress,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onData: ({ data }: any) => {
+        console.log("📥 Native distribution data:", data);
         const distribution = data?.data?.NativeTokenPeriodTransferEnforcer_TransferredInPeriod?.[0];
         if (distribution) {
+          console.log("🎉 New Native distribution!", distribution);
           handleNewDistribution({
             ...distribution,
             token: "0x0000000000000000000000000000000000000000", // Native ETH

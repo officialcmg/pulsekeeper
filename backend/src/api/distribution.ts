@@ -2,6 +2,7 @@ import { Router, type Router as RouterType } from 'express';
 import { z } from 'zod';
 import { runDistributionCheck, checkUserDistributionStatus, getAllUsersDistributionStatus } from '../services/distributionService.js';
 import { redeemForUser } from '../services/redemptionService.js';
+import { getRedemptionsForUser } from '../db/redemptions.js';
 
 export const distributionRouter: RouterType = Router();
 
@@ -105,6 +106,23 @@ distributionRouter.post('/redeem', async (req, res) => {
     
     res.status(500).json({ 
       error: 'Failed to redeem',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Get all redemptions for a user
+ */
+distributionRouter.get('/redemptions/:userAddress', async (req, res) => {
+  try {
+    const { userAddress } = req.params;
+    const redemptions = await getRedemptionsForUser(userAddress);
+    res.json({ success: true, redemptions });
+  } catch (error: any) {
+    console.error('Error getting redemptions:', error);
+    res.status(500).json({ 
+      error: 'Failed to get redemptions',
       message: error.message,
     });
   }
